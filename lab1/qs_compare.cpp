@@ -8,33 +8,41 @@
 
 #include <parlay/io.h>
 #include <parlay/primitives.h>
-//#include <parlay/internal/sequence_ops.h> // tabulate
 #include <parlay/random.h>
 #include <parlay/sequence.h> // sequence
 #include <parlay/internal/get_time.h>
 
 std::vector<long int> get_random_vector(long int n);
-int partition(std::vector<long int> &v, int start, int end);
-void sequentialQuicksort(std::vector<long int> &v, int start, int end);
 void printVector(std::vector<long int> v);
 void check_sorted(parlay::sequence<long> v);
 void check_sorted(std::vector<long> v);
 
-#define SIZE 30000000
-
-int main() {
+int main(int argc, char* argv[]) {
+	long N = 10000000;
+	auto usage = "Usage: qs_compare.exe <N>\nwhere recommended array size N < 30*10^6 because this executable was compiled with 32-bit MinGW\n";
+	if (argc == 1) {
+		std::cout << usage;
+	}
+	if (argc == 2) {
+		try {
+			N = std::stol(argv[1]);
+		} catch (...) {
+			std::cout << usage << "N not recognized!\n";
+			return 1;
+		}
+	}
 	srand((unsigned)time(0));
 
-	std::cout << "sorting array of size " << SIZE << "\n";
+	std::cout << "Sorting array of size " << N << "\n";
 
 	parlay::random_generator gen;
-    std::uniform_int_distribution<long> dis(0, SIZE - 1);
-    parlay::sequence<long> v1 = parlay::tabulate(SIZE, [&] (long i) {
-      auto r = gen[i];
-      return dis(r);
-    });
+	std::uniform_int_distribution<long> dis(0, N - 1);
+	parlay::sequence<long> v1 = parlay::tabulate(N, [&] (long i) {
+		auto r = gen[i];
+		return dis(r);
+	});
 
-	std::cout << "Parallel qsort" << std::endl;
+	std::cout << "Parallel qsort\n";
 	auto start = std::chrono::steady_clock::now();
 	parlay::sequence<long> result = parallQsort(v1);
 	auto end = std::chrono::steady_clock::now();
@@ -43,9 +51,9 @@ int main() {
 	check_sorted(result);
 
 	std::cout << "\n";
-	std::vector<long> v2 = get_random_vector(SIZE);
+	std::vector<long> v2 = get_random_vector(N);
 
-	std::cout << "Sequential qsort" << std::endl;
+	std::cout << "Sequential qsort\n";
 	auto start1 = std::chrono::steady_clock::now();
 	sequentialQsort(v2, 0, v2.size() - 1);
 	auto end1 = std::chrono::steady_clock::now();
@@ -62,7 +70,7 @@ int main() {
 std::vector<long> get_random_vector(long n) {
 	std::vector<long> v(n);
 	for (int i = 0; i < n; ++i)
-		v[i] = rand() % SIZE;
+		v[i] = rand() % n;
 	return v;
 }
 
